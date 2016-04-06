@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
+    android:orientation="vertical">
+    <ImageView
+        android:id="@+id/imageView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerInside"/>
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/buttonLinearLayout"
+        android:layout_centerHorizontal="true"
+        android:paddingBottom="5dp"
+        >
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#FF4500"
+            android:text="姓名："/>
+        <TextView
+            android:id="@+id/resultName"
+            android:textColor="#FF4500"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            tools:text="检测出的名字"/>
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/buttonLinearLayout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="50dp"
+        >
+        <Button
+            android:id="@+id/openImg"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="打开图片"/>
+        <Button
+            android:id="@+id/detectImg"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="检测"/>
+
+
+
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        >
+        <Button
+            android:id="@+id/addFaceDb"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="添加到数据库"/>
+        <Button
+            android:id="@+id/viewDb"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="数据库查看"/>
+
+    </LinearLayout>
+
+
+
+</RelativeLayout>
+
+
+
