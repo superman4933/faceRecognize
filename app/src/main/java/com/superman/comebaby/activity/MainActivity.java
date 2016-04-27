@@ -3,7 +3,6 @@ package com.superman.comebaby.activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.ContentUris;
-import android.content.ContentValues;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
@@ -30,6 +29,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.faceplusplus.api.FaceDetecter;
+import com.facepp.error.FaceppParseException;
 import com.facepp.http.HttpRequests;
 import com.facepp.http.PostParameters;
 import com.superman.comebaby.R;
@@ -42,13 +42,14 @@ public class MainActivity extends AppCompatActivity {
     Button openImg;
     Button detectImg;
     Button addFace;
+    Button creatPerson;
     Bitmap bitmap;
     ImageView imageView;
     TextView resultName;
     String dbFaceName;
     private final static int REQUEST_GET_IMG = 1;
-    final String APIKey = "35a467be6126eda75a31818ddd9e483e";
-    final String APISecret = "BRaGt8folSXNK6htil3410nMyejYkRyM";
+    final public static String APIKey = "35a467be6126eda75a31818ddd9e483e";
+    final public static String APISecret = "BRaGt8folSXNK6htil3410nMyejYkRyM";
     Handler handler = null;
     HandlerThread handlerThread = null;
     HttpRequests requests;
@@ -58,6 +59,8 @@ public class MainActivity extends AppCompatActivity {
     int faceCount;
     private Db db;
     private SQLiteDatabase sqLiteDatabase;
+    String groupOne;
+    String name;
 
 
     @Override
@@ -65,7 +68,8 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         resultName = (TextView) findViewById(R.id.resultName);
-
+        creatPerson = (Button) findViewById(R.id.createPerson);
+        groupOne = "groupOne";
         db = new Db(this, "face.db", null, 1);
         sqLiteDatabase = db.getReadableDatabase();
 
@@ -84,23 +88,56 @@ public class MainActivity extends AppCompatActivity {
         handler.post(new Runnable() {
             @Override
             public void run() {
-                Log.d("faceset", "1");
                 try {
-                    PostParameters postParameters = new PostParameters();
-                    postParameters.setFacesetName("firstFaceSet");
-//            JSONObject isCreateFaceSetResult=requests.facesetGetInfo(postParameters);
-//            String faceSetName=isCreateFaceSetResult.getString("faceset_name");
-//            if(faceSetName.equals("firstFaceSet")){
-//                Log.d("faceset", "人脸已经创建过了："+faceSetName);
-//                return;
-//            }
-                    requests.facesetCreate(postParameters);
-                    Log.d("faceset", "人脸集合创建成功");
+                    PostParameters createGroup = new PostParameters();
+                    createGroup.setGroupName(groupOne);
+                    requests.groupCreate(createGroup);
+                    Log.d("创建group成功", groupOne);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
         });
+//创建一个person方法
+        creatPerson.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        final AlertDialog.Builder personDialog = new AlertDialog.Builder(MainActivity.this);
+                        final View view = LayoutInflater.from(MainActivity.this).inflate(R.layout.dialog, null);
+                        personDialog.setTitle("创建person");
+//对话框的确定按钮方法
+                        personDialog.setPositiveButton("确定", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                EditText inputName = (EditText) view.findViewById(R.id.inputName);
+                                name = inputName.getText().toString();
+
+                                try {
+
+
+                                    PostParameters createPerson=new PostParameters();
+                                    createPerson.setGroupName(groupOne);
+                                    createPerson.setPersonName(name);
+                                    JSONObject x=requests.personCreate(createPerson);
+                                    Log.d("创建一个person", name+x.toString());
+                                } catch (FaceppParseException e) {
+                                    e.printStackTrace();
+                                }
+
+                            }
+
+
+                        });
+                        AlertDialog tmpcreatPersondialog = personDialog.create();
+                        tmpcreatPersondialog.setView(view);
+                        tmpcreatPersondialog.show();
+                    }
+                });
+            }});
+
 
         imageView = (ImageView) findViewById(R.id.imageView);
         detectImg = (Button) findViewById(R.id.detectImg);
@@ -130,29 +167,19 @@ public class MainActivity extends AppCompatActivity {
                                         String name = inputName.getText().toString();
                                         Log.d("123", name);
 
-                                        ContentValues values = new ContentValues();
-                                        values.put("name", name);
-                                        values.put("face_id", faceId);
-                                        sqLiteDatabase.insert("book", null, values);
-
-                                        values.clear();
-                                        Log.d("置入数据库成功", name);
-                                        Log.d("置入数据库成功", faceId);
-
                                         try {
-//                                  把faceid添加到服务器上面，并且运行训练模型，最后获取结果。
-                                            PostParameters parameters = new PostParameters();
-                                            parameters.setFaceId(faceId);
-                                            parameters.setFacesetName("firstFaceSet");
-//                                            添加到faceset
-                                            requests.facesetAddFace(parameters);
+//                                  把person_face添加到服务器上面，并且运行训练模型，最后获取结果。
+                                            PostParameters addPersonFace = new PostParameters();
+                                            addPersonFace.setFaceId(faceId);
+                                            addPersonFace.setPersonName(name);
+                                            requests.personAddFace(addPersonFace);
 //                                            运行训练模型
-                                            PostParameters parameters2 = new PostParameters();
-                                            parameters2.setFacesetName("firstFaceSet");
-                                            JSONObject trainSession_id = requests.trainSearch(parameters2);
+                                            PostParameters addFaceTrain = new PostParameters();
+                                            addFaceTrain.setGroupName(groupOne);
+                                            JSONObject trainSession_id = requests.trainIdentify(addFaceTrain);
                                             String train_id = trainSession_id.getString("session_id");
-                                            parameters2.setSessionId(train_id);
-                                            JSONObject result = requests.infoGetSession(parameters2);
+                                            addFaceTrain.setSessionId(train_id);
+                                            JSONObject result = requests.infoGetSession(addFaceTrain);
 //                                    循环对结果分析，发现训练成功就停止
 closeWaitDialog();
 
@@ -237,32 +264,27 @@ closeWaitDialog();
                             Log.d("从服务器获取的faceid", faceId);
 
 //                            开始识别
-                            PostParameters parameters = new PostParameters();
-                            parameters.setKeyFaceId(faceId);
-                            parameters.setFacesetName("firstFaceSet");
-                            parameters.setCount(3);
-                            JSONObject faceResult = requests.recognitionSearch(parameters);
+                            PostParameters recoPerson = new PostParameters();
+                            recoPerson.setKeyFaceId(faceId);
+                            recoPerson.setGroupName(groupOne);
+                            JSONObject faceResult = requests.recognitionIdentify(recoPerson);
                             Log.d("识别的原始结果", faceResult+"");
-                            String faceResult2 = faceResult.getString("candidate");
+
+                            String faceResult2 = faceResult.getString("face");
                             JSONArray faceResult3 = new JSONArray(faceResult2);
                             JSONObject faceResult4 = faceResult3.getJSONObject(0);
-                            String faceResult5 = faceResult4.getString("face_id");
-                            String similarity = faceResult4.getString("similarity");
+                            String faceResult5 = faceResult4.getString("candidate");
+                            JSONArray array2 = new JSONArray(faceResult5);
+                            JSONObject faceResult6 = array2.getJSONObject(0);
+                            String faceResult7=faceResult6.getString("person_name");
 
-                            double similarity2 = Double.parseDouble(similarity);
+                            dbFaceName=faceResult7;
+                            String confidence = faceResult6.getString("confidence");
 
-                            Log.d("识别结果的faceid", faceResult5);
-                            Log.d("识别结果的相似度", similarity2+"");
-                            Cursor cursor = sqLiteDatabase.query("Book", null, "face_id=?", new String[]{faceResult5}, null, null, null);
-                            Log.d("本地数据库的查询结果为", cursor.moveToFirst() + "");
+                            double confidence2 = Double.parseDouble(confidence);
 
-                            if (cursor.moveToFirst()&&similarity2>=80.0) {
-                                dbFaceName = cursor.getString(cursor.getColumnIndex("name"));
-                                Log.d("查询结果", dbFaceName);
-                            }
-                            if (cursor != null) {
-                                cursor.close();
-                            }
+                            Log.d("识别结果personName", faceResult5);
+                            Log.d("识别结果的相似度", confidence2+"");
 //                            为什么关闭dialog指令在子线程中不会报错
                             closeWaitDialog();
                         } catch (Exception e) {
@@ -272,6 +294,8 @@ closeWaitDialog();
                             Toast.makeText(MainActivity.this, "识别失败", Toast.LENGTH_SHORT);
                             // TODO 自动生成的 catch 块
                             e.printStackTrace();
+                        }finally {
+                            System.gc();
                         }
 
                         runOnUiThread(new Runnable() {
