@@ -4,8 +4,16 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@drawable/background"
     android:orientation="vertical">
-
+<ImageView
+    android:src="@drawable/facelogo"
+    android:layout_marginRight="5dp"
+    android:scaleType="centerInside"
+    android:layout_width="66dp"
+    android:layout_height="30dp"
+    android:layout_below="@+id/imageView_display"
+    android:layout_alignParentEnd="true" />
     <SurfaceView
         android:id="@+id/surfaceView_preview"
         android:layout_width="480px"
@@ -37,6 +45,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="密码:"
+            android:textColor="#F7F7F7"
             android:textSize="20sp" />
 
         <EditText
@@ -45,6 +54,8 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:hint="刷脸或输入密码登录"
+            android:textSize="13sp"
+            android:textColorHint="#DB7093"
             android:inputType="number" />
 
         <Button
@@ -59,10 +70,19 @@
         android:id="@+id/textView_log"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textSize="18sp"
+        android:textSize="15sp"
+        android:textColor="#008B00"
         android:layout_below="@+id/surfaceView_preview"
         android:layout_marginTop="10dp"
         tools:text="测试" />
+    <TextView
+        android:id="@+id/textView_admin"
+        android:layout_below="@+id/textView_log"
+        android:textSize="15sp"
+        tools:text="是否是管理员"
+        android:textColor="#008B00"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
 
     <Button
         android:id="@+id/button_switch"

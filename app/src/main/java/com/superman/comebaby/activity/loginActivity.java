@@ -44,9 +44,11 @@ public class loginActivity extends AppCompatActivity implements SurfaceHolder.Ca
     Button button_login;
     Button button_switch;
     TextView textView_log;
+    TextView textView_admin;
     JSONObject result;
-    String verifyConfidence;
-    String verifyIsSamePerson;
+    String verifyConfidence="";
+    String verifyIsSamePerson="";
+    int intVerifyConfidence;
     String log;
     SurfaceView surfaceView_preview;
     SurfaceHolder surfaceHolder;
@@ -55,6 +57,8 @@ public class loginActivity extends AppCompatActivity implements SurfaceHolder.Ca
     HandlerThread handlerThread;
     Handler handlerText;
     HandlerThread handlerThreadText;
+    Handler handlerAdmin;
+    HandlerThread handlerThreadAdmin;
     SurfaceHolder holder;
     JSONObject jsonFace;
     FaceDetecter faceDetecter = null;
@@ -78,11 +82,12 @@ public class loginActivity extends AppCompatActivity implements SurfaceHolder.Ca
     byte[] tmp;
     Bitmap bmp;
 
-    String race;
-    String gender;
-    String smiling;
-    String age;
-    String raceConfidence;
+    String race="";
+    String gender="";
+    String smiling="";
+    int intSmiling;
+    String age="";
+    String raceConfidence="";
 
     JSONObject attribute;
     JSONObject raceAttribute;
@@ -106,6 +111,7 @@ IsFaceInfo isFaceInfo;
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_login);
+        requests = new HttpRequests(MainActivity.APIKey, MainActivity.APISecret);
         Log.w("cameraac", FindFrontCamera() + "");
 isFaceInfo=new IsFaceInfo();
         handlerThread = new HandlerThread("login");
@@ -115,11 +121,14 @@ isFaceInfo=new IsFaceInfo();
         handlerThreadText = new HandlerThread("viewText");
         handlerThreadText.start();
         handlerText = new Handler(handlerThreadText.getLooper());
-
+        handlerThreadAdmin = new HandlerThread("admin");
+        handlerThreadAdmin.start();
+        handlerAdmin = new Handler(handlerThreadAdmin.getLooper());
         faceMask = (FaceMask) findViewById(R.id.faceMask_mask);
         button_login = (Button) findViewById(R.id.button_login);
         button_switch = (Button) findViewById(R.id.button_switch);
         textView_log = (TextView) findViewById(R.id.textView_log);
+        textView_admin = (TextView) findViewById(R.id.textView_admin);
         imageView_display = (ImageView) findViewById(R.id.imageView_display);
         edtTxt_password = (EditText) findViewById(R.id.edtTxt_password);
         surfaceView_preview = (SurfaceView) findViewById(R.id.surfaceView_preview);
@@ -477,6 +486,8 @@ isFaceInfo=new IsFaceInfo();
             }
         });
 
+
+
 //        此处为第二个handler用来获取具体数据,然并卵,其实没这个必要，UI处理时还是post到主线程，该卡还是卡
         handlerText.post(new Runnable() {
             FaceDetecter.Face[] faceinfoBitmap = null;
@@ -484,7 +495,7 @@ isFaceInfo=new IsFaceInfo();
             @Override
             public void run() {
                 Log.d("test:handlerText", "运行中3");
-                requests = new HttpRequests(MainActivity.APIKey, MainActivity.APISecret);
+
 
                 Log.d("测试值2", "" + faceDetecter.getImageByteArray() + "");
                 try {
@@ -494,7 +505,7 @@ isFaceInfo=new IsFaceInfo();
 //                        把原始的YUV帧转换为bitmap
                         i = i + 1;
                         Log.d("i", "" + i + "");
-                        if (i >= 30) {
+                        if (i >= 15) {
                             tem = yuv2bitmap(data, camera);
                             if (cameraState == FRONT_CAMERA) {
                                 tem = bitmapRotate(-90, tem);
@@ -505,7 +516,6 @@ isFaceInfo=new IsFaceInfo();
                             i = 0;
                             Log.d("if--test:i", "" + i + "");
                             faceinfoBitmap = faceDetecter2.findFaces(tem);
-                            Log.d("测试值2", "" + faceDetecter2.getImageByteArray() + "");
                             Log.d("测试值3", "" + faceDetecter2.getResultJsonString() + "");
 
                             jsonFace = requests.offlineDetect(faceDetecter2.getImageByteArray(),
@@ -530,6 +540,7 @@ isFaceInfo=new IsFaceInfo();
                             race = raceAttribute.getString("value");
                             gender = genderAttribute.getString("value");
                             smiling = smilingAttribute.getString("value");
+                           intSmiling= (int) ( (Double.parseDouble(smiling)));
                             age = ageAttribute.getString("value");
                             raceConfidence = raceAttribute.getString("confidence");
                             Log.d("attribute_race", race + ":" + raceConfidence);
@@ -537,21 +548,12 @@ isFaceInfo=new IsFaceInfo();
                             Log.d("attribute_smiling", smiling);
                             Log.d("attribute_age", age);
 
+//if为是否验证与管理员相似度的开关，因为再次与在线api互动很耗时
+                            if (true) {
 
-////                    以下代码开始设置参数为验证人脸做前期数据的准备
-                            postParameters = new PostParameters();
-                            postParameters.setPersonName("me");
-                            postParameters.setFaceId(faceId);
-////                   在线获取验证的识别数据，准备解析出人脸相似度数据
-//                        JSONObject trainResult = requests.trainVerify(postParameters);
-//                        Log.d("trainResult",trainResult+"");
-                            result = requests.recognitionVerify(postParameters);
 
-                            verifyConfidence = result.getString("confidence");
-                            verifyIsSamePerson = result.getString("is_same_person");
-//
-//
-                            Log.d("识别结果", "" + verifyConfidence + verifyIsSamePerson);
+                            }
+
                         }
 
 
@@ -567,18 +569,57 @@ isFaceInfo=new IsFaceInfo();
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        imageView_display.setImageBitmap(tem);
+//                        imageView_display.setImageBitmap(tem);
                         log = "识别结果：" + "\n" + "性别：" + gender + "\n" + "年龄:" + age+"\n"+"人种：" + race + "\n" +
-                                "微笑度：" + smiling + "%" + "\n" + "与管理员相似度："+verifyConfidence+"%"+verifyIsSamePerson
-                                ;
+                                "微笑度：" + intSmiling ;
                         textView_log.setText(log);
-
+                        Log.d("uiThread02","运行中");
 
                     }
                 });
-                requests=null;
             }
         });
+        Log.d("handler空隙","运行中");
+        handlerAdmin.post(new Runnable() {
+            @Override
+            public void run() {
+                Log.d("handlerAdmin","判断管理员相似度线程运行1");
+                ////                    以下代码开始设置参数为验证人脸做前期数据的准备
+                try {
+                    Log.d("handlerAdmin","判断管理员相似度线程运行1");
+                postParameters = new PostParameters();
+                    Log.d("handlerAdmin","判断管理员相似度线程运行2");
+                postParameters.setPersonName("me");
+                    Log.d("handlerAdmin","判断管理员相似度线程运行3");
+                    if (faceId != null) {
+                        postParameters.setFaceId(faceId);
+                    }
+
+                    Log.d("handlerAdmin","判断管理员相似度线程运行4");
+////                   在线获取验证的识别数据，准备解析出人脸相似度数据
+//                        JSONObject trainResult = requests.trainVerify(postParameters);
+//                        Log.d("trainResult",trainResult+"");
+
+                    result = requests.recognitionVerify(postParameters);
+
+                    verifyConfidence = result.getString("confidence");
+                    intVerifyConfidence= (int) (Double.parseDouble(verifyConfidence));
+                    verifyIsSamePerson = result.getString("is_same_person");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+//
+                Log.d("识别结果", "" + verifyConfidence + verifyIsSamePerson);
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        textView_admin.setText("与管理员相似度："+intVerifyConfidence+ "%"+verifyIsSamePerson);
+                    }
+                });
+            }
+        });
+
 
         loginActivity.this.camera.setPreviewCallback(loginActivity.this);
     }
