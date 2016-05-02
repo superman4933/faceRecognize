@@ -52,10 +52,11 @@
             android:id="@+id/edtTxt_password"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:textColor="#BFEFFF"
             android:layout_weight="1"
             android:hint="刷脸或输入密码登录"
-            android:textSize="13sp"
-            android:textColorHint="#DB7093"
+            android:textSize="20sp"
+            android:textColorHint="#FF3E96"
             android:inputType="number" />
 
         <Button

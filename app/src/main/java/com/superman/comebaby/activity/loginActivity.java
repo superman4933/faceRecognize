@@ -215,6 +215,7 @@ isFaceInfo=new IsFaceInfo();
                 if (isPassword) {
                     Intent intent = new Intent(loginActivity.this, MainActivity.class);
                     startActivity(intent);
+                    finish();
                     Log.d("isPassword", "密码正确，验证通过");
                 } else {
                     Toast.makeText(loginActivity.this, "密码错误", Toast.LENGTH_LONG).show();
@@ -303,6 +304,7 @@ isFaceInfo=new IsFaceInfo();
         faceDetecter2.release(this);
         handlerThread.quit();
         handlerThreadText.quit();
+        handlerThreadAdmin.quit();
     }
 
 
@@ -352,15 +354,7 @@ isFaceInfo=new IsFaceInfo();
         return bmp;
     }
 
-    //旋转bitmap方法1
-    public static Bitmap adjustPhotoRotation(Bitmap bmp, float degree) {
-        Matrix matrix = new Matrix();
-        matrix.postRotate(degree);
-        Log.d("sizeMatrix", bmp.getWidth() + ":" + bmp.getHeight() + "");
-        return Bitmap.createBitmap(bmp, 0, 0, bmp.getWidth(), bmp.getHeight(), matrix, true);
-    }
-
-
+    //旋转bitmap方法2
     protected Bitmap bitmapRotate(float degrees, Bitmap baseBitmap) {
         // 创建一个和原图一样大小的图片
         Bitmap afterBitmap = Bitmap.createBitmap(baseBitmap.getWidth(),
@@ -485,26 +479,23 @@ isFaceInfo=new IsFaceInfo();
 //                loginActivity.this.camera.setPreviewCallback(loginActivity.this);
             }
         });
-
-
-
 //        此处为第二个handler用来获取具体数据,然并卵,其实没这个必要，UI处理时还是post到主线程，该卡还是卡
         handlerText.post(new Runnable() {
             FaceDetecter.Face[] faceinfoBitmap = null;
-
             @Override
             public void run() {
                 Log.d("test:handlerText", "运行中3");
-
-
                 Log.d("测试值2", "" + faceDetecter.getImageByteArray() + "");
                 try {
 //                    与在线API互动，上传本地识别结果，获取详细的线上识别信息
                     Log.d("faceinfo2", "" + isFaceInfo.getisFaceInfo() + "");
+//                    如果检测到人脸就执行下面语句
                     if (isFaceInfo.getisFaceInfo()) {
 //                        把原始的YUV帧转换为bitmap
                         i = i + 1;
                         Log.d("i", "" + i + "");
+//                        用i控制调用在线api的频率，频繁调用会导致服务器错误，对外表现为人脸检测/*
+// 到存在多少毫秒后，开始进行图像转换，调用在线api*/
                         if (i >= 15) {
                             tem = yuv2bitmap(data, camera);
                             if (cameraState == FRONT_CAMERA) {
@@ -512,15 +503,22 @@ isFaceInfo=new IsFaceInfo();
                             } else {
                                 tem = bitmapRotate(90, tem);
                             }
-
                             i = 0;
                             Log.d("if--test:i", "" + i + "");
                             faceinfoBitmap = faceDetecter2.findFaces(tem);
                             Log.d("测试值3", "" + faceDetecter2.getResultJsonString() + "");
-
                             jsonFace = requests.offlineDetect(faceDetecter2.getImageByteArray(),
                                     faceDetecter2.getResultJsonString(), new PostParameters());
                             Log.d("jsonFace", "" + jsonFace + "");
+                            /*手动对已经使用完的bitmap进行内存回收*/
+                            if(tem!=null&&!tem.isRecycled()){
+                                tem.recycle();
+                                tem=null;
+                            }
+                            if (bmp != null && !bmp.isRecycled()) {
+                                bmp.recycle();
+                                bmp=null;
+                            }
 
 
                             a = jsonFace.getString("face");
@@ -535,8 +533,6 @@ isFaceInfo=new IsFaceInfo();
                             genderAttribute = attribute.getJSONObject("gender");
                             smilingAttribute = attribute.getJSONObject("smiling");
                             ageAttribute = attribute.getJSONObject("age");
-
-
                             race = raceAttribute.getString("value");
                             gender = genderAttribute.getString("value");
                             smiling = smilingAttribute.getString("value");
@@ -548,21 +544,10 @@ isFaceInfo=new IsFaceInfo();
                             Log.d("attribute_smiling", smiling);
                             Log.d("attribute_age", age);
 
-//if为是否验证与管理员相似度的开关，因为再次与在线api互动很耗时
-                            if (true) {
-
-
-                            }
-
+//手动运行垃圾回收器，会对整个内存进行扫描，理论上比较耗时,实际内存的检测结果没有很大变化。。。可能自动回收也做的比较好吧
+                            System.gc();
                         }
-
-
-//                        tem = adjustPhotoRotation(tem, -90);
-//                        tem = reverseBitmap(tem, 0);
-
                     }
-
-
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -574,7 +559,6 @@ isFaceInfo=new IsFaceInfo();
                                 "微笑度：" + intSmiling ;
                         textView_log.setText(log);
                         Log.d("uiThread02","运行中");
-
                     }
                 });
             }
@@ -586,29 +570,28 @@ isFaceInfo=new IsFaceInfo();
                 Log.d("handlerAdmin","判断管理员相似度线程运行1");
                 ////                    以下代码开始设置参数为验证人脸做前期数据的准备
                 try {
-                    Log.d("handlerAdmin","判断管理员相似度线程运行1");
-                postParameters = new PostParameters();
-                    Log.d("handlerAdmin","判断管理员相似度线程运行2");
-                postParameters.setPersonName("me");
-                    Log.d("handlerAdmin","判断管理员相似度线程运行3");
+                    /*执行指令前先判断是否从图像处获取了faceId，这是从上个handler中获取的，因为已经做过
+                    * 有无人脸判断，这次在这个基础上再做一个有无faceId判断即可*/
                     if (faceId != null) {
+                        Log.d("handlerAdmin","判断管理员相似度线程运行1");
+                        postParameters = new PostParameters();
+                        Log.d("handlerAdmin","判断管理员相似度线程运行2");
+                        postParameters.setPersonName("me");
+                        Log.d("handlerAdmin","判断管理员相似度线程运行3");
                         postParameters.setFaceId(faceId);
-                    }
-
-                    Log.d("handlerAdmin","判断管理员相似度线程运行4");
+                        Log.d("handlerAdmin","判断管理员相似度线程运行4");
 ////                   在线获取验证的识别数据，准备解析出人脸相似度数据
 //                        JSONObject trainResult = requests.trainVerify(postParameters);
 //                        Log.d("trainResult",trainResult+"");
+                        result = requests.recognitionVerify(postParameters);
+                        verifyConfidence = result.getString("confidence");
+                        intVerifyConfidence= (int) (Double.parseDouble(verifyConfidence));
+                        verifyIsSamePerson = result.getString("is_same_person");
+                    }
 
-                    result = requests.recognitionVerify(postParameters);
-
-                    verifyConfidence = result.getString("confidence");
-                    intVerifyConfidence= (int) (Double.parseDouble(verifyConfidence));
-                    verifyIsSamePerson = result.getString("is_same_person");
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
-
 //
                 Log.d("识别结果", "" + verifyConfidence + verifyIsSamePerson);
                 runOnUiThread(new Runnable() {
@@ -619,8 +602,6 @@ isFaceInfo=new IsFaceInfo();
                 });
             }
         });
-
-
         loginActivity.this.camera.setPreviewCallback(loginActivity.this);
     }
 }
