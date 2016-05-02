@@ -1,12 +1,9 @@
 package com.superman.comebaby.activity;
 
-import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.ContentUris;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -20,20 +17,16 @@ import android.provider.DocumentsContract;
 import android.provider.MediaStore;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.faceplusplus.api.FaceDetecter;
-import com.facepp.error.FaceppParseException;
 import com.facepp.http.HttpRequests;
 import com.facepp.http.PostParameters;
 import com.superman.comebaby.R;
-import com.superman.comebaby.db.Db;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -41,7 +34,6 @@ import org.json.JSONObject;
 public class MainActivity extends AppCompatActivity {
     Button openImg;
     Button detectImg;
-    Button addFace;
     Button creatPerson;
     Bitmap bitmap;
     ImageView imageView;
@@ -57,11 +49,7 @@ public class MainActivity extends AppCompatActivity {
     ProgressDialog dialog;
     String faceId;
     int faceCount;
-    private Db db;
-    private SQLiteDatabase sqLiteDatabase;
     String groupOne;
-    String name;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,150 +58,17 @@ public class MainActivity extends AppCompatActivity {
         resultName = (TextView) findViewById(R.id.resultName);
         creatPerson = (Button) findViewById(R.id.createPerson);
         groupOne = "groupOne";
-        db = new Db(this, "face.db", null, 1);
-        sqLiteDatabase = db.getReadableDatabase();
-
         dialog = new ProgressDialog(this);
-
         handlerThread = new HandlerThread("detect");
         handlerThread.start();
         handler = new Handler(handlerThread.getLooper());
 //        离线sdk的检查器和http请求对象初始化
-
         faceDetecter = new FaceDetecter();
         faceDetecter.init(this, APIKey);
         requests = new HttpRequests(APIKey, APISecret);
-
-//初始化，创建一个名为"firstFaceSet"的人脸集合(先从服务器获取数据判断，是否创建过这个人脸集合)
-        handler.post(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    PostParameters createGroup = new PostParameters();
-                    createGroup.setGroupName(groupOne);
-                    requests.groupCreate(createGroup);
-                    Log.d("创建group成功", groupOne);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        });
-//创建一个person方法
-        creatPerson.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                handler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        final AlertDialog.Builder personDialog = new AlertDialog.Builder(MainActivity.this);
-                        final View view = LayoutInflater.from(MainActivity.this).inflate(R.layout.dialog, null);
-                        personDialog.setTitle("创建person");
-//对话框的确定按钮方法
-                        personDialog.setPositiveButton("确定", new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
-                                EditText inputName = (EditText) view.findViewById(R.id.inputName);
-                                name = inputName.getText().toString();
-
-                                try {
-
-
-                                    PostParameters createPerson=new PostParameters();
-                                    createPerson.setGroupName(groupOne);
-                                    createPerson.setPersonName(name);
-                                    JSONObject x=requests.personCreate(createPerson);
-                                    Log.d("创建一个person", name+x.toString());
-                                } catch (FaceppParseException e) {
-                                    e.printStackTrace();
-                                }
-
-                            }
-
-
-                        });
-                        AlertDialog tmpcreatPersondialog = personDialog.create();
-                        tmpcreatPersondialog.setView(view);
-                        tmpcreatPersondialog.show();
-                    }
-                });
-            }});
-
-
         imageView = (ImageView) findViewById(R.id.imageView);
         detectImg = (Button) findViewById(R.id.detectImg);
         openImg = (Button) findViewById(R.id.openImg);
-//        添加到数据库按钮的方法
-        addFace = (Button) findViewById(R.id.addFaceDb);
-        addFace.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                handler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (faceCount != 1) {
-                            Toast.makeText(MainActivity.this, "一次只能添加一张哦",
-                                    Toast.LENGTH_SHORT).show();
-                            return;
-                        }
-
-                        AlertDialog.Builder dialog = new AlertDialog.Builder(MainActivity.this);
-                        final View view = LayoutInflater.from(MainActivity.this).inflate(R.layout.dialog, null);
-                        dialog.setTitle("这是谁呢?");
-//对话框的确定按钮方法
-                        dialog.setPositiveButton("确定", new DialogInterface.OnClickListener() {
-                                    @Override
-                                    public void onClick(DialogInterface dialog, int which) {
-                                        EditText inputName = (EditText) view.findViewById(R.id.inputName);
-                                        String name = inputName.getText().toString();
-                                        Log.d("123", name);
-
-                                        try {
-//                                  把person_face添加到服务器上面，并且运行训练模型，最后获取结果。
-                                            PostParameters addPersonFace = new PostParameters();
-                                            addPersonFace.setFaceId(faceId);
-                                            addPersonFace.setPersonName(name);
-                                            requests.personAddFace(addPersonFace);
-//                                            运行训练模型
-                                            PostParameters addFaceTrain = new PostParameters();
-                                            addFaceTrain.setGroupName(groupOne);
-                                            JSONObject trainSession_id = requests.trainIdentify(addFaceTrain);
-                                            String train_id = trainSession_id.getString("session_id");
-                                            addFaceTrain.setSessionId(train_id);
-                                            JSONObject result = requests.infoGetSession(addFaceTrain);
-//                                    循环对结果分析，发现训练成功就停止
-closeWaitDialog();
-
-                                            Log.d("训练结果", result.toString());
-                                        } catch (Exception e) {
-                                            e.printStackTrace();
-                                        }
-
-
-                                    }
-                                }
-
-                        );
-
-                        dialog.setNegativeButton("取消", new DialogInterface.OnClickListener()
-
-                                {
-                                    @Override
-                                    public void onClick(DialogInterface dialog, int which) {
-
-                                    }
-                                }
-
-                        );
-
-                        dialog.setCancelable(false);
-                        AlertDialog tmpdialog = dialog.create();
-                        tmpdialog.setView(view);
-                        tmpdialog.show();
-
-                    }
-                });
-            }
-        });
 
 //        打开图片按钮的方法
         openImg.setOnClickListener(new View.OnClickListener() {
@@ -268,7 +123,7 @@ closeWaitDialog();
                             recoPerson.setKeyFaceId(faceId);
                             recoPerson.setGroupName(groupOne);
                             JSONObject faceResult = requests.recognitionIdentify(recoPerson);
-                            Log.d("识别的原始结果", faceResult+"");
+                            Log.d("识别的原始结果", faceResult + "");
 
                             String faceResult2 = faceResult.getString("face");
                             JSONArray faceResult3 = new JSONArray(faceResult2);
@@ -276,15 +131,15 @@ closeWaitDialog();
                             String faceResult5 = faceResult4.getString("candidate");
                             JSONArray array2 = new JSONArray(faceResult5);
                             JSONObject faceResult6 = array2.getJSONObject(0);
-                            String faceResult7=faceResult6.getString("person_name");
+                            String faceResult7 = faceResult6.getString("person_name");
 
-                            dbFaceName=faceResult7;
+                            dbFaceName = faceResult7;
                             String confidence = faceResult6.getString("confidence");
 
                             double confidence2 = Double.parseDouble(confidence);
 
                             Log.d("识别结果personName", faceResult5);
-                            Log.d("识别结果的相似度", confidence2+"");
+                            Log.d("识别结果的相似度", confidence2 + "");
 //                            为什么关闭dialog指令在子线程中不会报错
                             closeWaitDialog();
                         } catch (Exception e) {
@@ -294,7 +149,7 @@ closeWaitDialog();
                             Toast.makeText(MainActivity.this, "识别失败", Toast.LENGTH_SHORT);
                             // TODO 自动生成的 catch 块
                             e.printStackTrace();
-                        }finally {
+                        } finally {
                             System.gc();
                         }
 
