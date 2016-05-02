@@ -279,8 +279,6 @@ isFaceInfo=new IsFaceInfo();
         if (cameraState == BACK_CAMERA) {
             pars.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
         }
-
-
         camera.setParameters(pars);
     }
 
