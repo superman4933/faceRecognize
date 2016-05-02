@@ -34,7 +34,6 @@ import org.json.JSONObject;
 public class MainActivity extends AppCompatActivity {
     Button openImg;
     Button detectImg;
-    Button creatPerson;
     Bitmap bitmap;
     ImageView imageView;
     TextView resultName;
@@ -55,8 +54,6 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        resultName = (TextView) findViewById(R.id.resultName);
-        creatPerson = (Button) findViewById(R.id.createPerson);
         groupOne = "groupOne";
         dialog = new ProgressDialog(this);
         handlerThread = new HandlerThread("detect");
