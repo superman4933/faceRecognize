@@ -31,6 +31,7 @@ import com.superman.comebaby.R;
 import com.superman.comebaby.util.FaceMask;
 import com.superman.comebaby.util.IsFaceInfo;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
@@ -480,8 +481,11 @@ public class loginActivity extends AppCompatActivity implements SurfaceHolder.Ca
                             }
 
 
-//                    /*以上代码从线上JSON数据中解析出了faceId*/
-
+//                    以上代码从线上JSON数据中解析出了faceId*/
+                           String a = jsonFace.getString("face");
+                           JSONArray b = new JSONArray(a);
+                            c = b.getJSONObject(0);//从数组里面再去获取json数据，只要第一组。
+                            faceId = c.getString("face_id");//在这一组里去提取出face_id键值对形式
 //                        以下代码从线上JSON数据中解析出了人脸的各种属性，人种、性别、年龄等等。。
 
                             JSONObject attribute = c.getJSONObject("attribute");
