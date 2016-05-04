@@ -31,7 +31,6 @@ import com.superman.comebaby.R;
 import com.superman.comebaby.util.FaceMask;
 import com.superman.comebaby.util.IsFaceInfo;
 
-import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
@@ -46,8 +45,8 @@ public class loginActivity extends AppCompatActivity implements SurfaceHolder.Ca
     TextView textView_log;
     TextView textView_admin;
     JSONObject result;
-    String verifyConfidence="";
-    String verifyIsSamePerson="";
+    String verifyConfidence = "";
+    String verifyIsSamePerson = "";
     int intVerifyConfidence;
     String log;
     SurfaceView surfaceView_preview;
@@ -64,12 +63,6 @@ public class loginActivity extends AppCompatActivity implements SurfaceHolder.Ca
     FaceDetecter faceDetecter = null;
     FaceDetecter faceDetecter2 = null;
     FaceMask faceMask;
-    int delta;
-    int wh;
-    int ww;
-    int hh;
-    int tmpBack;
-    int tmp2;
     private int width;
     private int height;
     HttpRequests requests;
@@ -79,41 +72,27 @@ public class loginActivity extends AppCompatActivity implements SurfaceHolder.Ca
     ImageView imageView_display;
     Bitmap tem;
     int i = 0;
-    byte[] tmp;
-    Bitmap bmp;
-
-    String race="";
-    String gender="";
-    String smiling="";
+    String race = "";
+    String gender = "";
+    String smiling = "";
+    String age = "";
     int intSmiling;
-    String age="";
-    String raceConfidence="";
-
-    JSONObject attribute;
-    JSONObject raceAttribute;
-    JSONObject genderAttribute;
-    JSONObject smilingAttribute;
-    JSONObject ageAttribute;
-
-    String a;
-    JSONArray b;
+    String raceConfidence = "";
     JSONObject c;
     String faceId;
-
     PostParameters postParameters;
-
     byte[] ori;
     byte[] ori2;
-IsFaceInfo isFaceInfo;
+    IsFaceInfo isFaceInfo;
+
     @Override
 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
         setContentView(R.layout.activity_login);
         requests = new HttpRequests(MainActivity.APIKey, MainActivity.APISecret);
         Log.w("cameraac", FindFrontCamera() + "");
-isFaceInfo=new IsFaceInfo();
+        isFaceInfo = new IsFaceInfo();
         handlerThread = new HandlerThread("login");
         handlerThread.start();
         handler = new Handler(handlerThread.getLooper());
@@ -291,7 +270,6 @@ isFaceInfo=new IsFaceInfo();
             camera.setPreviewCallback(null);
             camera.stopPreview();
             camera.release();
-            finish();
         }
     }
 
@@ -303,6 +281,7 @@ isFaceInfo=new IsFaceInfo();
         handlerThread.quit();
         handlerThreadText.quit();
         handlerThreadAdmin.quit();
+        Log.d("onDestroy", "调用毁灭方法");
     }
 
 
@@ -338,6 +317,8 @@ isFaceInfo=new IsFaceInfo();
 
     //   把yuv转换成bitmap
     public Bitmap yuv2bitmap(byte[] mData, Camera myCamera) {
+        byte[] tmp;
+        Bitmap bmp;
         Camera.Size size = myCamera.getParameters().getPreviewSize(); //获取预览大小
         final int w = size.width;  //宽度
         final int h = size.height;
@@ -368,36 +349,10 @@ isFaceInfo=new IsFaceInfo();
     }
 
 
-    //    *            0为水平反转，1为垂直反转
-//    * @return
-//            */
-    public static Bitmap reverseBitmap(Bitmap bmp, int flag) {
-        float[] floats = null;
-        switch (flag) {
-            case 0: // 水平反转
-                floats = new float[]{-1f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 1f};
-                break;
-            case 1: // 垂直反转
-                floats = new float[]{1f, 0f, 0f, 0f, -1f, 0f, 0f, 0f, 1f};
-                break;
-        }
-
-        if (floats != null) {
-            Matrix matrix = new Matrix();
-            matrix.setValues(floats);
-            return Bitmap.createBitmap(bmp, 0, 0, bmp.getWidth(), bmp.getHeight(), matrix, true);
-        }
-
-        return null;
-    }
-
-
     @Override
     public void onPreviewFrame(final byte[] data, final Camera camera) {
         Log.d("test-onPreviewFrame", "运行中1");
         camera.setPreviewCallback(null);
-//        ori=null;
-//        ori2=null;
         ori = new byte[width * height];
         ori2 = new byte[width * height * 3 / 2];
 
@@ -432,11 +387,16 @@ isFaceInfo=new IsFaceInfo();
                     }
 
                 } else {
-
+                    int delta;
+                    int wh;
+                    int ww;
+                    int hh;
+                    int tmpBack;
+                    int tmp2;
                     //后置摄像头的预览帧转换，旋转并翻转，转换为灰度图
                     delta = 0;
                     for (int x = 0; x < width; x++) {
-                       tmpBack = (height - 1) * width;
+                        tmpBack = (height - 1) * width;
                         for (int y = height - 1; y >= 0; y--) {
                             ori2[delta] = data[tmpBack + x];
                             tmpBack -= width;
@@ -449,7 +409,7 @@ isFaceInfo=new IsFaceInfo();
                     hh = height / 2;
 
                     for (int i = 0; i < ww; i++) {
-                         tmp2 = width * (hh - 1);
+                        tmp2 = width * (hh - 1);
                         for (int j = 0; j < hh; j++) {
                             ori2[delta] = data[wh + tmp2 + i];
                             ori2[delta + 1] = data[wh + tmp2 + i + 1];
@@ -480,6 +440,7 @@ isFaceInfo=new IsFaceInfo();
 //        此处为第二个handler用来获取具体数据,然并卵,其实没这个必要，UI处理时还是post到主线程，该卡还是卡
         handlerText.post(new Runnable() {
             FaceDetecter.Face[] faceinfoBitmap = null;
+
             @Override
             public void run() {
                 Log.d("test:handlerText", "运行中3");
@@ -508,7 +469,7 @@ isFaceInfo=new IsFaceInfo();
                             jsonFace = requests.offlineDetect(faceDetecter2.getImageByteArray(),
                                     faceDetecter2.getResultJsonString(), new PostParameters());
                             Log.d("jsonFace", "" + jsonFace + "");
-                            /*手动对已经使用完的bitmap进行内存回收*/
+                            /*手动对已经使用完的bitmap进行内存回收*实测效果不明显/
                             if(tem!=null&&!tem.isRecycled()){
                                 tem.recycle();
                                 tem=null;
@@ -519,22 +480,19 @@ isFaceInfo=new IsFaceInfo();
                             }
 
 
-                            a = jsonFace.getString("face");
-                            b = new JSONArray(a);
-                            c = b.getJSONObject(0);//从数组里面再去获取json数据，只要第一组。
-                            faceId = c.getString("face_id");//在这一组里去提取出face_id键值对形式
 //                    /*以上代码从线上JSON数据中解析出了faceId*/
 
 //                        以下代码从线上JSON数据中解析出了人脸的各种属性，人种、性别、年龄等等。。
-                            attribute = c.getJSONObject("attribute");
-                            raceAttribute = attribute.getJSONObject("race");
-                            genderAttribute = attribute.getJSONObject("gender");
-                            smilingAttribute = attribute.getJSONObject("smiling");
-                            ageAttribute = attribute.getJSONObject("age");
+
+                            JSONObject attribute = c.getJSONObject("attribute");
+                            JSONObject raceAttribute = attribute.getJSONObject("race");
+                            JSONObject genderAttribute = attribute.getJSONObject("gender");
+                            JSONObject smilingAttribute = attribute.getJSONObject("smiling");
+                            JSONObject ageAttribute = attribute.getJSONObject("age");
                             race = raceAttribute.getString("value");
                             gender = genderAttribute.getString("value");
                             smiling = smilingAttribute.getString("value");
-                           intSmiling= (int) ( (Double.parseDouble(smiling)));
+                            intSmiling = (int) ((Double.parseDouble(smiling)));
                             age = ageAttribute.getString("value");
                             raceConfidence = raceAttribute.getString("confidence");
                             Log.d("attribute_race", race + ":" + raceConfidence);
@@ -542,8 +500,8 @@ isFaceInfo=new IsFaceInfo();
                             Log.d("attribute_smiling", smiling);
                             Log.d("attribute_age", age);
 
-//手动运行垃圾回收器，会对整个内存进行扫描，理论上比较耗时,实际内存的检测结果没有很大变化。。。可能自动回收也做的比较好吧
-                            System.gc();
+//手动运行垃圾回收器，会对整个内存进行扫描，理论上比较耗时,这里针对bitmap，实际内存的检测结果没有很大变化。。。可能自动回收也做的比较好吧
+//                            System.gc();
                         }
                     }
                 } catch (Exception e) {
@@ -553,37 +511,36 @@ isFaceInfo=new IsFaceInfo();
                     @Override
                     public void run() {
 //                        imageView_display.setImageBitmap(tem);
-                        log = "识别结果：" + "\n" + "性别：" + gender + "\n" + "年龄:" + age+"\n"+"人种：" + race + "\n" +
-                                "微笑度：" + intSmiling ;
+                        log = "识别结果：" + "\n" + "性别：" + gender + "\n" + "年龄:" + age + "\n" + "人种：" + race + "\n" +
+                                "微笑度：" + intSmiling;
                         textView_log.setText(log);
-                        Log.d("uiThread02","运行中");
+                        Log.d("uiThread02", "运行中");
                     }
                 });
             }
         });
-        Log.d("handler空隙","运行中");
         handlerAdmin.post(new Runnable() {
             @Override
             public void run() {
-                Log.d("handlerAdmin","判断管理员相似度线程运行1");
+                Log.d("handlerAdmin", "判断管理员相似度线程运行1");
                 ////                    以下代码开始设置参数为验证人脸做前期数据的准备
                 try {
                     /*执行指令前先判断是否从图像处获取了faceId，这是从上个handler中获取的，因为已经做过
                     * 有无人脸判断，这次在这个基础上再做一个有无faceId判断即可*/
                     if (faceId != null) {
-                        Log.d("handlerAdmin","判断管理员相似度线程运行1");
+                        Log.d("handlerAdmin", "判断管理员相似度线程运行1");
                         postParameters = new PostParameters();
-                        Log.d("handlerAdmin","判断管理员相似度线程运行2");
+                        Log.d("handlerAdmin", "判断管理员相似度线程运行2");
                         postParameters.setPersonName("me");
-                        Log.d("handlerAdmin","判断管理员相似度线程运行3");
+                        Log.d("handlerAdmin", "判断管理员相似度线程运行3");
                         postParameters.setFaceId(faceId);
-                        Log.d("handlerAdmin","判断管理员相似度线程运行4");
+                        Log.d("handlerAdmin", "判断管理员相似度线程运行4");
 ////                   在线获取验证的识别数据，准备解析出人脸相似度数据
 //                        JSONObject trainResult = requests.trainVerify(postParameters);
 //                        Log.d("trainResult",trainResult+"");
                         result = requests.recognitionVerify(postParameters);
                         verifyConfidence = result.getString("confidence");
-                        intVerifyConfidence= (int) (Double.parseDouble(verifyConfidence));
+                        intVerifyConfidence = (int) (Double.parseDouble(verifyConfidence));
                         verifyIsSamePerson = result.getString("is_same_person");
                     }
 
@@ -595,7 +552,7 @@ isFaceInfo=new IsFaceInfo();
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        textView_admin.setText("与管理员相似度："+intVerifyConfidence+ "%"+verifyIsSamePerson);
+                        textView_admin.setText("与管理员相似度：" + intVerifyConfidence + "%" + verifyIsSamePerson);
                     }
                 });
             }

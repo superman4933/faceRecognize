@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">ComeBaby</string>
-    <string name="title_activity_main">come</string>
-    <string name="title_activity_login">loginActivity</string>
+    <string name="app_name">人脸检测</string>
+    <string name="title_activity_main">人脸识别</string>
+    <string name="title_activity_login">人脸检测</string>
 </resources>
